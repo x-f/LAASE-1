@@ -36,16 +36,16 @@ void GPS_setup() {
   //getUBX_ACK(setEco);
 
   #if DEBUG
-    Serial.println("GPS setup done");
+    Serial.println(F("GPS setup done"));
   #endif
 }
 
 boolean GPS_poll() {
   //Poll GPS
   #if !GPS_HW_SERIAL
-    GPS_Serial.println("$PUBX,00*33");
+    GPS_Serial.println(F("$PUBX,00*33"));
   #else
-    Serial.println("$PUBX,00*33");
+    Serial.println(F("$PUBX,00*33"));
   #endif
     delay(300);
     unsigned long starttime = millis();
@@ -63,7 +63,7 @@ boolean GPS_poll() {
       // 
       if (millis() - starttime > 1000) {
         #if DEBUG
-          Serial.println("timeout");
+          Serial.println(F("timeout"));
         #endif
         break;
       }

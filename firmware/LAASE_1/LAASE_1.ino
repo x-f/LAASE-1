@@ -72,7 +72,7 @@ byte gps_hour, gps_minute, gps_second;
 long gps_lat, gps_lon, gps_alt;
 unsigned long gps_fix_age;
 boolean gps_has_fix = false;
-byte gps_navmode = 0;
+byte gps_navmode = 99;
 
 int tmp102_temp = 0;
 int ds18b20_temp_out = 0;
@@ -144,7 +144,7 @@ void setup() {
   program_started = millis();
 
   #if DEBUG
-    Serial.println("go");
+    Serial.println(F("go"));
   #endif
 }
 
@@ -157,9 +157,16 @@ void loop() {
   
   if (count % 10 == 0) {
     #if DEBUG
-      Serial.println("checkNAV");
+      Serial.println(F("checkNAV"));
     #endif
     GPS_checkNAV();
+    if (gps_navmode != 6) {
+      #if DEBUG
+        Serial.print(F("navmode: ")); Serial.println(gps_navmode, DEC);
+      #endif
+      GPS_setup();
+      GPS_checkNAV();
+    }
     GPS_poll();
   }
     
@@ -197,7 +204,7 @@ void loop() {
   sprintf(time, "%02d:%02d:%02d", gps_hour, gps_minute, gps_second);
 
   str.begin();
-  str.print("$$LAASE,");
+  str.print(F("$$LAASE,"));
   str.print(count);
   str.print(",");
   str.print(time);
@@ -211,7 +218,7 @@ void loop() {
   str.print(gps_alt/100.0, 0);
   str.print(",");
 
-  str.print(gps.speed()*1.852/100, 0); // uz km/h
+  str.print(gps.speed()/100, 0); // km/h
   str.print(",");
   str.print(gps.course()/100, DEC); // minor
   str.print(","); // minor
@@ -312,14 +319,14 @@ boolean telemetry_log() {
   
   if (!card.init(SPI_HALF_SPEED, chipSelect)) {
     #if (DEBUG)
-      Serial.println("init error");
+      Serial.println(F("init error"));
     #endif
     return false;
   }
 
   if (!file.open(logfile, O_RDWR | O_CREAT | O_AT_END)) {
     #if (DEBUG)
-      Serial.println("file error");
+      Serial.println(F("file error"));
     #endif
     return false;
   }
