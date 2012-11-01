@@ -1,0 +1,40 @@
+[22:25:6] [INF] ** started **
+[22:25:7] [INF] setup_camera
+[22:25:8] [SET] get_prop(QUALITY)=0
+[22:25:9] [SET] get_prop(RESOLUTION)=0
+[22:25:11] [SET] get_prop(QUALITY)=0
+[22:25:12] [SET] get_prop(RESOLUTION)=0
+[22:25:14] [SET] get_prop(FOCUS_MODE)=0
+[22:25:15] [SET] get_prop(FOCUS_MODE)=1
+[22:25:16] [SET] get_focus=2374
+[22:25:18] [SET] get_focus=2374
+[22:25:20] [SET] get_prop(IS_MODE)=1
+[22:25:21] [SET] get_prop(IS_MODE)=1
+[22:25:22] [SET] get_prop(FLASH_MODE)=2
+[22:25:24] [SET] get_prop(FLASH_MODE)=2
+[22:25:25] [INF] all set up
+[22:25:26] [INF] shooting..
+[22:25:28] [SET] get_focus=517 (1)
+[22:25:30] [SET] get_focus=517 (2)
+[22:25:31] [INF] pic: 1
+[22:25:34] [DAT] data: 22; 30; 29; 0; 3810; 450016
+[22:25:38] [INF] pic: 2
+[22:25:41] [DAT] data: 22; 30; 29; 0; 3796; 446912
+[22:25:48] [INF] pic: 3
+[22:25:51] [DAT] data: 22; 32; 29; 0; 3787; 443776
+[22:25:58] [INF] pic: 4
+[22:26:1] [DAT] data: 22; 33; 29; 0; 3783; 440608
+[22:26:8] [INF] pic: 5
+[22:26:11] [DBG] TakeMovie
+[22:26:13] [DBG] VIDEO_STD
+[22:26:31] [DBG] saving..
+[22:26:35] [DBG] saving..
+[22:26:37] [GET] get_focus=65535 (3)
+[22:26:39] [DBG] P
+[22:26:40] [DAT] data: 23; 36; 29; 0; 3765; 409184
+[22:26:40] [INF] pic: 6
+[22:26:43] [DAT] data: 23; 36; 29; 0; 3778; 405856
+[22:26:50] [INF] pic: 7
+[22:26:53] [DAT] data: 23; 37; 29; 0; 3769; 402816
+[22:27:0] [INF] pic: 8
+[22:27:3] [DAT] data: 23; 37; 29; 0; 3769; 399552
