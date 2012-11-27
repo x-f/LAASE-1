@@ -106,22 +106,22 @@ function TakeMovie()
   sleep(500)
 
   press("shoot_half")
-	sleep(500) -- give AF a chance
-	press("shoot_full")
-	release("shoot_full")
-	release("shoot_half")
-	
-	-- record
-	sleep(video_duration)
-	
-	click("shoot_full")
-	sleep(100)
-	while get_movie_status() == 5 do
-   sleep(500)
-   debuglog("DBG", "saving..")
+  sleep(500) -- give AF a chance
+  press("shoot_full")
+  release("shoot_full")
+  release("shoot_half")
+
+  -- record
+  sleep(video_duration)
+
+  click("shoot_full")
+  sleep(100)
+  while get_movie_status() == 5 do
+    sleep(500)
+    debuglog("DBG", "saving..")
   end
   debuglog("GET", 'get_focus=' .. get_focus() .. ' (3)')
-  
+
   status=capmode.set('P')
   debuglog("DBG", "P")
   sleep(500)
