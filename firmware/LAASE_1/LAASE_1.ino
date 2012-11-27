@@ -13,8 +13,8 @@
 */
 
 // GPS pieslēgts vai nu D2 un D3 (SoftwareSerial), vai D0 un D1 (UART)
-#define GPS_HW_SERIAL false
-#define DEBUG true
+#define GPS_HW_SERIAL true
+#define DEBUG false
  
 #include <string.h>
 #include <util/crc16.h>
@@ -34,14 +34,15 @@ TinyGPS gps;
   SoftwareSerial GPS_Serial(2, 3);
 #endif
 
-#define PIN_radio 8
+#define PIN_radio 7
 
+// unused
 #define PIN_statusled 5
 
 #include <SdFat.h>
 SdFat card;
 SdFile file;
-char logfile[] = "fc-log07.csv";
+char logfile[] = "fc-log09.csv";
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -218,44 +219,44 @@ void loop() {
   str.print(gps_alt/100.0, 0);
   str.print(",");
 
-  str.print(gps.speed()/100, 0); // km/h
-  str.print(",");
-  str.print(gps.course()/100, DEC); // minor
-  str.print(","); // minor
+  //str.print(gps.speed()/100, DEC); // km/h
+  //str.print(",");
+  //str.print(gps.course()/100, DEC); // minor
+  //str.print(","); // minor
 
-  str.print(gps.fix_quality(), DEC);
-  str.print(",");
+  //str.print(gps.fix_quality(), DEC);
+  //str.print(",");
   str.print(gps.sats(), DEC);
   str.print(",");
-  str.print(gps_navmode, DEC);
-  str.print(",");
-  str.print(gps_fix_age, DEC); // minor
-  str.print(","); // minor
+  //str.print(gps_navmode, DEC);
+  //str.print(",");
+  //str.print(gps_fix_age, DEC); // minor
+  //str.print(","); // minor
   //str.print(gps_has_fix, DEC);
-  str.print(cutdown_status, DEC);
-  str.print(",");
+  //str.print(cutdown_status, DEC);
+  //str.print(",");
 
 
   read_sensors();
 
-  str.print(tmp102_temp, DEC); // minor
-  str.print(","); // minor
+  //str.print(tmp102_temp, DEC); // minor
+  //str.print(","); // minor
   str.print(ds18b20_temp_out, DEC);
   str.print(",");
   str.print(ds18b20_temp_bat, DEC);
   str.print(",");
-  str.print(bmp085_temp, DEC);
-  str.print(",");
+  //str.print(bmp085_temp, DEC);
+  //str.print(",");
   str.print(bmp085_pressure, DEC);
   str.print(",");
   str.print(UV_sensor1_value, DEC);
   str.print(",");
-  str.print(UV_sensor2_value, DEC);
-  str.print(",");
+  //str.print(UV_sensor2_value, DEC);
+  //str.print(",");
 
   str.print(bat.getVoltage());
-  str.print(","); // minor
-  str.print(freeRam(), DEC); // minor
+  //str.print(","); // minor
+  //str.print(freeRam(), DEC); // minor
 
 
   //sprintf(datastring, "%d,%02d:%02d:%02d,%ld,%ld,%ld,%d,%d,%d,%d,%d,%d,%ld", count, gps_hour, gps_minute, gps_second, gps_lat, gps_lon, gps_alt/100, gps.speed()*1.852/100, gps.fix_quality(), gps.sats(), gps_navmode, gps_fix_age, bmp085_temp, bmp085_pressure);
@@ -265,12 +266,36 @@ void loop() {
   sprintf(checksum_str, "*%04X\n", CHECKSUM);
   //strcat(datastring, checksum_str);
 
-  // preamble  for dl-fldigi to better lock 
-  //rtty_txstring("$$$");
+  // preamble for dl-fldigi to better lock 
+  rtty_txstring("UUU");
   rtty_txstring(datastring);
   rtty_txstring(checksum_str);
 
   // pārējā info, ko nav nepieciešams sūtīt uz zemi
+  
+  str.print(gps.speed()/100, DEC); // km/h
+  str.print(",");
+  str.print(gps.course()/100, DEC); // minor
+  str.print(","); // minor
+
+  str.print(gps.fix_quality(), DEC);
+  str.print(",");
+  str.print(gps_navmode, DEC);
+  str.print(",");
+  str.print(gps_fix_age, DEC); // minor
+  str.print(","); // minor
+  str.print(gps_has_fix, DEC);
+  str.print(cutdown_status, DEC);
+  str.print(",");
+
+  str.print(tmp102_temp, DEC); // minor
+  str.print(","); // minor
+  str.print(bmp085_temp, DEC);
+  str.print(",");
+  str.print(UV_sensor2_value, DEC);
+  str.print(","); // minor
+  str.print(freeRam(), DEC); // minor
+
 //  str.print(",");
 //  str.print(tmp102_temp, DEC);
 //  str.print(",");
@@ -282,6 +307,7 @@ void loop() {
 //  str.println();
 
   telemetry_log();
+  
   #if DEBUG
     //Serial.print(datastring);
   #endif

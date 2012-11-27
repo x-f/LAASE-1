@@ -22,7 +22,7 @@ void read_sensors() {
   ds18b20_temp_bat = DS18B20.getTempC(ThermometerAddr_bat) * 10;
 
   UV_sensor1_value = UV_sensor1.measure();
-  UV_sensor2_value = UV_sensor2.measure();
+  //UV_sensor2_value = UV_sensor2.measure();
 }
 
 
