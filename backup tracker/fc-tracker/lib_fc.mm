@@ -2,6 +2,7 @@
 // logošana, GPS dati, skaņas signāli, ..
 
 use audio, time, io, system, ui, bt, array, math;
+//use files;
 use fc_cfg as fc_cfg;
 
 
@@ -34,6 +35,8 @@ function log2file(data, file = "")
 
     io.writeln(f, "");
     io.close(f);
+    // mtime
+    //files.time(logfile, time.get());
   
   catch e by
     print "ERROR: log2file: " + e;
@@ -159,15 +162,15 @@ end;
 // end;
 
 
-// function send2proc(pipe, data = "")
-//   if isnative(pipe) then
-//     try
-//       io.writem(pipe, data);
-//     catch e by
-//       print "ERROR: send2proc: " + e;
-//     end;
-//   end;
-// end;
+function send2proc(pipe, data = "")
+  if isnative(pipe) then
+    try
+      io.write(pipe, data);
+    catch e by
+      print "ERROR: send2proc: " + e;
+    end;
+  end;
+end;
 
 // ja atsūta info par kļūdu, nomaina status vērtību,
 // lai par to paziņotu ar skaņas signālu

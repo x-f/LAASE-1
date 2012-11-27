@@ -166,7 +166,7 @@ function decodeNMEA(s, flightlog)
           flightlog["lon"] = num(substr(pa[5], 0, 3)) + num(substr(pa[5], 3)) / 60;
           if pa[6] = "W" then flightlog["lon"] = -flightlog["lon"]; end;
         end;
-        if pa[8] # "" then flightlog["dir"] = num(pa[8]) end;
+        if pa[8] # "" then flightlog["dir"] = math.round(num(pa[8]), 0) end;
         if pa[7] # "" then flightlog["speed"] = num(pa[7]) * 1.852 end; // knots to km/h
 
         flightlog['fix'] = 1;

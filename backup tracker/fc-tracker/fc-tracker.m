@@ -1,11 +1,12 @@
-// fails, kas atbild par sakariem ar GPS ierīci
-// logo GPS datus un tos nosūta uz galveno skriptu
-// tiek darbināts kā process no galvenā skripta
+// Skripts, kas saņem datus no GPS,
+// ieraksta tos logfailā,
+// nosūta kā SMS.
+// x-f, 2012
 
 use io, time, system, ui, math;
 use bigint;
 use encoding, msg, sms, gsm;
-use device;
+use device, proc;
 use lib_fc as fc;
 use lib_gps as gps;
 use fc_cfg as fc_cfg;
@@ -70,6 +71,23 @@ ui.label(0, TITLE);
 ui.label(1, encoding.fromutf8("Iespējas"));
 // ui.label(2, "Paslept");
 
+// -----------------------------------
+
+const pipename_ping = "FCPING";
+// 
+if not proc.runs("watchdog") then
+  pipe_ping = proc.pipe(pipename_ping, true);
+  fc.log("launch watchdog");
+  proc.run("watchdog");
+else
+  pipe_ping = proc.pipe(pipename_ping);
+end;
+if (isnative(pipe_ping)) then
+  fc.log("pipe open", "FC");
+end;
+
+// ping the watchdog
+fc.send2proc(pipe_ping, "ping");
 
 // *****************************************************************
 
@@ -97,6 +115,9 @@ gps.gps_setup(gps_btc);
 fc.beep("ok");
 fc.beep("ok");
 sleep(5000);
+
+// ping the watchdog
+fc.send2proc(pipe_ping, "ping");
 
 
 do
@@ -133,6 +154,12 @@ do
       try
         if io.avail(gps_btc) > 0 then
           gps_line = io.readln(gps_btc);
+          //fc.log("io.avail: " + io.avail(gps_btc));
+          //print io.avail(gps_btc);
+  
+          // ping the watchdog
+          io.flush(pipe_ping);
+          fc.send2proc(pipe_ping, ".");
         end;
       catch bt_exc by
         fc.log("GPS connection error: " + bt_exc, "error");
@@ -153,29 +180,7 @@ do
         
         // fc.log(gps_line);
       end;
-      
-      /*gpscnt = 0;
-      try
-        fc.log("avail: " + io.avail(gps_btc));
-        while io.avail(gps_btc) > 0 do
-          gpscnt++;
-          gps_line = io.readln(gps_btc);
-          if (gps_line # null) then
-            gps.decodeNMEA(gps_line, gps.flightlog);
-          else 
-            break;
-          end;
-        end;
-        fc.log("gpscnt: " + gpscnt);
-        fc.log("avail: " + io.avail(gps_btc));
-
-      catch bt_exc by
-        fc.log("GPS connection error: " + bt_exc, "error");
-        io.close(gps_btc);
-        gps_btc = null;
-        status['status'] = "error";
-      end;*/
-      
+            
     end; // if gps_dev and gps_btc
     //else
     
@@ -184,19 +189,19 @@ do
       gps_lost = true;
       fc.log("bt null");
     end;
-    if 
-      gps.flightlog['date'] > 0 and 
-      //math.abs(time.utc() - gps.flightlog['date'] + gps.flightlog['time']) > 60 
-      // :(
-      bigint.num(bigint.abs(bigint.sub(time.utc(), gps.flightlog['date'] + gps.flightlog['time']))) > 60
-    then
-      fc.log("time diff: " + bigint.str(bigint.abs(bigint.sub(time.utc(), gps.flightlog['date'] + gps.flightlog['time']))));
-      
-      gps_lost = true;
-      try io.close(gps_btc); catch tmp_e by end;
-      gps_btc = null;
-      //sleep(1000);
-    end;
+    // if 
+    //   gps.flightlog['date'] > 0 and 
+    //   //math.abs(time.utc() - gps.flightlog['date'] + gps.flightlog['time']) > 60 
+    //   // :(
+    //   bigint.num(bigint.abs(bigint.sub(time.utc(), gps.flightlog['date'] + gps.flightlog['time']))) > 60
+    // then
+    //   fc.log("time diff: " + bigint.str(bigint.abs(bigint.sub(time.utc(), gps.flightlog['date'] + gps.flightlog['time']))));
+    //   
+    //   gps_lost = true;
+    //   try io.close(gps_btc); catch tmp_e by end;
+    //   gps_btc = null;
+    //   //sleep(1000);
+    // end;
     
     if gps_lost then
       gps_btc = fc.bt_conngps(gps_dev);
@@ -204,8 +209,8 @@ do
       // sleep(5000);
       
       if gps_btc # null then
+        sleep(2000); // lai GPS "iesilst"
         gps.gps_setup(gps_btc);
-        sleep(10000); // lai GPS "iesilst"
         reboot_cnt = 0;
       else
         status['status'] = "error";
@@ -407,7 +412,7 @@ do
           sms_txt = fc.getTelemetryString(gps.flightlog, tm_fields);
           
           fc.log(sms_txt);
-          sms.send(fc_cfg.notify_sms_recipients, sms_txt);
+          //sms.send(fc_cfg.notify_sms_recipients, sms_txt);
           //fc.log("SMS queued", "ok");
 
           // ja pirms tam jau ir sūtīta ziņa, to dzēš, jo veca
@@ -451,6 +456,11 @@ until cmd = CMD_EXIT;
 
 if (gps_btc # null) then
   io.close(gps_btc);
+end;
+
+if proc.runs("watchdog") then
+  fc.log("stop watchdog");
+  proc.stop("watchdog");
 end;
 
 
