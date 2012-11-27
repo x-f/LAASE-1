@@ -8,7 +8,7 @@
   atkārto ciklu
 */
 
-use sms, msg, ui, encoding, net, proc;
+use sms, msg, ui, encoding, net, proc, io;
 use xflib as lib;
 use xf_cfg as cfg;
 
