@@ -2,9 +2,10 @@
 void read_sensors() {
 
   // stalker temperatūras sensors
-  //tmp102_temp = Tmp102.getTemperatureInCelsius() * 10;
-  tmp102_temp = tmp102_getTemperature() * 10;
+  tmp102_temp = Tmp102.getTemperatureInCelsius() * 10;
+  ////tmp102_temp = tmp102_getTemperature() * 10;
 
+  /*
   // lai būtu pēc iespējas mazāk trokšņu,
   // datus no sensora pieprasa vairākas reizes
   long tmp = 0;
@@ -15,14 +16,15 @@ void read_sensors() {
     delayMicroseconds(1);
   }
   bmp085_pressure = tmp/50;
- 
+  */
+  
    // Dallas temperatūras sensori
   DS18B20.requestTemperatures();
   ds18b20_temp_out = DS18B20.getTempC(ThermometerAddr_out) * 10;
   ds18b20_temp_bat = DS18B20.getTempC(ThermometerAddr_bat) * 10;
 
   UV_sensor1_value = UV_sensor1.measure();
-  //UV_sensor2_value = UV_sensor2.measure();
+  UV_sensor2_value = UV_sensor2.measure();
 }
 
 
@@ -40,6 +42,7 @@ float tmp102_getTemperature(){
   return celsius;
 }
 
+/*
 // zemāk viss, kas vajadzīgs BMP085 sensoram
 //--------------------------------------------------
 #define BMP085_ADDRESS 0x77  // I2C address of BMP085
@@ -235,4 +238,5 @@ int readRegister(int deviceAddress, byte address){
     return v;
 }
 //--------------------------------------------------
+*/
 

@@ -1,6 +1,7 @@
 ﻿
 use system;
 
+bufferfile = system.docdir + "sms-buffer.txt";
 logfile = system.docdir + "telemetry.log";
 lastsmsfile = system.docdir + "lastsms.dat";
 

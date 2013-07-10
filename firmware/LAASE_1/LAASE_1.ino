@@ -1,6 +1,6 @@
 /*
   LAASE-1
-  x-f (x-f@people.lv), 2012
+  x-f (x-f@people.lv), 2012-2013
 
   !! pirms starta jānosaka cutdown taimera vērtību un GPS robežas
   !! pārlikt GPS uz UART, DEBUG=false, GPS_HW_SERIAL=true
@@ -20,7 +20,7 @@
 #include <util/crc16.h>
 #include <avr/wdt.h>
 #include <Wire.h>
-//#include <TMP102.h> 
+#include <TMP102.h> 
 
 // Stalker temperatūras sensors
 int tmp102Address = 0x48;
@@ -34,33 +34,34 @@ TinyGPS gps;
   SoftwareSerial GPS_Serial(2, 3);
 #endif
 
-#define PIN_radio 7
+#define PIN_radio 6
 
-// unused
-#define PIN_statusled 5
+// LED for GPS status
+#define PIN_statusled 15
+
 
 #include <SdFat.h>
 SdFat card;
 SdFile file;
-char logfile[] = "fc-log09.csv";
+char logfile[] = "g-log.csv";
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#define ONE_WIRE_BUS 4
+#define ONE_WIRE_BUS 2
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
 DeviceAddress ThermometerAddr_out = { 0x28, 0x14, 0x24, 0xBB, 0x03, 0x00, 0x00, 0x9F };
 DeviceAddress ThermometerAddr_bat = { 0x28, 0x5A, 0x13, 0xBB, 0x03, 0x00, 0x00, 0x2C };
 
-#include <Battery.h>
-Battery bat;
+//#include <Battery.h>
+//Battery bat;
 
 #include <AmbientLightSensor.h>
-AmbientLightSensor UV_sensor1(A1); // garais uz GND, īsais uz A0
-AmbientLightSensor UV_sensor2(A2); // garais uz GND, īsais uz A1
-#define UV_sensor_max1 64 // ja 0, tad mēra digitāli
-#define UV_sensor_max2 512 // ja 0, tad mēra digitāli
-// UV (violets) 512, UV (uv) 64
+AmbientLightSensor UV_sensor1(A2); // garais uz GND - UV
+AmbientLightSensor UV_sensor2(A3); // garais uz GND - violets
+#define UV_sensor_max1 512 // ja 0, tad mēra digitāli
+#define UV_sensor_max2 16 // ja 0, tad mēra digitāli
+// UV (violets) 16, UV (uv) 512
 
 
 #include <PString.h>
@@ -78,8 +79,8 @@ byte gps_navmode = 99;
 int tmp102_temp = 0;
 int ds18b20_temp_out = 0;
 int ds18b20_temp_bat = 0;
-int bmp085_temp;
-long bmp085_pressure;
+//int bmp085_temp;
+//long bmp085_pressure;
 int UV_sensor1_value, UV_sensor2_value = 0;
 
 #define PIN_cutdown A0
@@ -108,7 +109,10 @@ void setup() {
   wdt_reset();
 
   Serial.begin(9600);
-
+  delay(150);
+  resetGPS();
+  delay(500);
+  
   //#if DEBUG
   //  Serial.println("FC");
   //#endif
@@ -121,7 +125,7 @@ void setup() {
   GPS_setup();
   
   Wire.begin();
-  bmp085Calibration();
+  //bmp085Calibration();
 
   // Dallas temperatūras sensori
   // Start up the library
@@ -141,6 +145,9 @@ void setup() {
   pinMode(PIN_cutdown, OUTPUT);
   digitalWrite(PIN_cutdown, LOW);
 
+  pinMode(PIN_statusled, OUTPUT);
+  digitalWrite(PIN_statusled, LOW);
+
 
   program_started = millis();
 
@@ -155,30 +162,52 @@ void loop() {
   
   timestamp_now = millis();
   
-  
-  if (count % 10 == 0) {
-    #if DEBUG
-      Serial.println(F("checkNAV"));
-    #endif
-    GPS_checkNAV();
-    if (gps_navmode != 6) {
-      #if DEBUG
-        Serial.print(F("navmode: ")); Serial.println(gps_navmode, DEC);
-      #endif
+
+  if (count % 15 == 0) {
+    //#if DEBUG
+    //  Serial.println(F("checkNAV"));
+    //#endif
+    //GPS_checkNAV();
+    //if (gps_navmode != 6) {
+      //#if DEBUG
+      //  Serial.print(F("navmode: ")); Serial.println(gps_navmode, DEC);
+      //#endif
+      Serial.flush();
+      //resetGPS();
+      delay(500);
       GPS_setup();
-      GPS_checkNAV();
-    }
-    GPS_poll();
+      Serial.flush();
+      //GPS_checkNAV();
+    //}
+    //GPS_poll();
   }
     
   GPS_poll();
-  
+  //GPS_poll_send();
+  read_sensors();
+  //GPS_poll_recv();
+
   gps.crack_time(&gps_hour, &gps_minute, &gps_second, &gps_fix_age);
   gps.get_position(&gps_lat, &gps_lon, &gps_fix_age);
   gps_alt = gps.altitude();
   gps_has_fix = gps.has_fix();
 
 
+  // statusa LEDs
+  //  - ja nav GPS fix, deg
+  //  - ja ir GPS fix, iemirgojas
+  if (gps_has_fix) {
+    for (int i = 0; i < 3; i++) {
+      digitalWrite(PIN_statusled, HIGH);
+      delay(100);
+      digitalWrite(PIN_statusled, LOW);
+      delay(50);
+    }
+  } else {
+    digitalWrite(PIN_statusled, HIGH);
+  }
+  
+  
   // cutdown
   boolean cutdown_activate = false;
   // taimeris kopš palaišanas
@@ -186,8 +215,8 @@ void loop() {
     cutdown_activate = true;
   }
   // GPS robežas
-  // nostrādā virs noteikta augstuma? ( && gps_alt/100 > 20000)
-  if (gps_has_fix) {
+  // nostrādā virs noteikta augstuma?
+  if (gps_has_fix && gps_alt/100 > 20000) {
     if ((gps_lat > 5709000 || gps_lon > 2455555)) {
       //Serial.print("crossed: "); Serial.println(cutdown_geofence_threshold, DEC);
       if (cutdown_geofence_cnt++ >= cutdown_geofence_threshold) {
@@ -211,16 +240,17 @@ void loop() {
   str.print(time);
   str.print(",");
 
-  //str.print(gps_lat/100000.0, 5);
-  str.print(gps_lat, DEC);
+  str.print(gps_lat/100000.0, 5);
+  //str.print(gps_lat, DEC);
   str.print(",");
-  str.print(gps_lon, DEC);
+  str.print(gps_lon/100000.0, 5);
+  //str.print(gps_lon, DEC);
   str.print(",");
   str.print(gps_alt/100.0, 0);
   str.print(",");
 
-  //str.print(gps.speed()/100, DEC); // km/h
-  //str.print(",");
+  str.print(gps.speed()/100, DEC); // km/h
+  str.print(",");
   //str.print(gps.course()/100, DEC); // minor
   //str.print(","); // minor
 
@@ -236,9 +266,6 @@ void loop() {
   //str.print(cutdown_status, DEC);
   //str.print(",");
 
-
-  read_sensors();
-
   //str.print(tmp102_temp, DEC); // minor
   //str.print(","); // minor
   str.print(ds18b20_temp_out, DEC);
@@ -247,14 +274,14 @@ void loop() {
   str.print(",");
   //str.print(bmp085_temp, DEC);
   //str.print(",");
-  str.print(bmp085_pressure, DEC);
-  str.print(",");
+  //str.print(bmp085_pressure, DEC);
+  //str.print(",");
   str.print(UV_sensor1_value, DEC);
   str.print(",");
-  //str.print(UV_sensor2_value, DEC);
+  str.print(UV_sensor2_value, DEC);
   //str.print(",");
 
-  str.print(bat.getVoltage());
+  //str.print(bat.getVoltage());
   //str.print(","); // minor
   //str.print(freeRam(), DEC); // minor
 
@@ -267,14 +294,18 @@ void loop() {
   //strcat(datastring, checksum_str);
 
   // preamble for dl-fldigi to better lock 
-  rtty_txstring("UUU");
+  rtty_txbyte(0x80);
+  rtty_txbyte(0x80);
+  rtty_txbyte(0x80);
+  rtty_txstring("$");
   rtty_txstring(datastring);
   rtty_txstring(checksum_str);
 
+
   // pārējā info, ko nav nepieciešams sūtīt uz zemi
   
-  str.print(gps.speed()/100, DEC); // km/h
-  str.print(",");
+  //str.print(gps.speed()/100, DEC); // km/h
+  //str.print(",");
   str.print(gps.course()/100, DEC); // minor
   str.print(","); // minor
 
@@ -282,29 +313,21 @@ void loop() {
   str.print(",");
   str.print(gps_navmode, DEC);
   str.print(",");
-  str.print(gps_fix_age, DEC); // minor
-  str.print(","); // minor
-  str.print(gps_has_fix, DEC);
+  //str.print(gps_fix_age, DEC); // minor
+  //str.print(","); // minor
+  //str.print(gps_has_fix, DEC);
+  //str.print(",");
   str.print(cutdown_status, DEC);
   str.print(",");
 
   str.print(tmp102_temp, DEC); // minor
-  str.print(","); // minor
-  str.print(bmp085_temp, DEC);
-  str.print(",");
-  str.print(UV_sensor2_value, DEC);
-  str.print(","); // minor
-  str.print(freeRam(), DEC); // minor
+  //str.print(","); // minor
+  //str.print(bmp085_temp, DEC);
+  //str.print(",");
+  //str.print(UV_sensor2_value, DEC);
+  //str.print(","); // minor
+  //str.print(freeRam(), DEC); // minor
 
-//  str.print(",");
-//  str.print(tmp102_temp, DEC);
-//  str.print(",");
-//  str.print(gps_fix_age, DEC);
-//  str.print(",");
-//  str.print(gps.course()/100, DEC);
-//  str.print(",");
-//  str.print(freeRam(), DEC);
-//  str.println();
 
   telemetry_log();
   
@@ -312,7 +335,6 @@ void loop() {
     //Serial.print(datastring);
   #endif
   
-  //blink(gps.fix_quality());
   
   //delay(1000);
   count++;
@@ -361,9 +383,9 @@ boolean telemetry_log() {
   file.close(); 
 }
 
-int freeRam() {
-  extern int __heap_start, *__brkval; 
-  int v; 
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
-}
+//int freeRam() {
+//  extern int __heap_start, *__brkval; 
+//  int v; 
+//  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+//}
 

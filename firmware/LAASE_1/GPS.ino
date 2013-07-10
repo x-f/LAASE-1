@@ -6,10 +6,16 @@ void GPS_setup() {
     //GPS_Serial.begin(4800);
     //GPS_Serial.flush();
   #else
-    //Serial.begin(9600);
+    Serial.begin(9600);
   #endif
+  delay(200);
 
-  delay(500);
+  #if !GPS_HW_SERIAL
+    GPS_Serial.flush();
+  #else
+    Serial.flush();
+  #endif
+  delay(100);
   
   // izslēdz visus GPS NMEA teikumus uBlox GPS modulim
   // ZDA, GLL, VTG, GSV, GSA, GGA, RMC
@@ -19,7 +25,12 @@ void GPS_setup() {
   uint8_t setNMEAoff[] = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x80, 0x25, 0x00, 0x00, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xA0, 0xA9};
   sendUBX(setNMEAoff, sizeof(setNMEAoff)/sizeof(uint8_t));
   
-  delay(500);
+  delay(200);
+  #if !GPS_HW_SERIAL
+    GPS_Serial.flush();
+  #else
+    Serial.flush();
+  #endif
   
   // airborne
   // ..
@@ -28,6 +39,7 @@ void GPS_setup() {
   uint8_t setNav[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x06, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0xDC};
   sendUBX(setNav, sizeof(setNav)/sizeof(uint8_t));
   //getUBX_ACK(setNav);
+  delay(1000);
 
   //uint8_t setEco[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x08, 0x04, 0x25, 0x95};
   //uint8_t setEco[] = {0xB5, 0x62, 0x06, 0x11, 0x02, 0x00, 0x00, 0x04, 0x1D, 0x85};
@@ -40,14 +52,21 @@ void GPS_setup() {
   #endif
 }
 
-boolean GPS_poll() {
+// pieprasa info
+boolean GPS_poll_send() {
   //Poll GPS
   #if !GPS_HW_SERIAL
     GPS_Serial.println(F("$PUBX,00*33"));
   #else
+    Serial.flush();
     Serial.println(F("$PUBX,00*33"));
   #endif
-    delay(300);
+}
+
+// saņem info
+boolean GPS_poll_recv() {
+  //Serial.flush();
+    //delay(300);
     unsigned long starttime = millis();
     while (true) {
       #if !GPS_HW_SERIAL
@@ -69,6 +88,48 @@ boolean GPS_poll() {
       }
     }
   return false;
+}
+
+
+boolean GPS_poll() {
+  //Poll GPS
+  #if !GPS_HW_SERIAL
+    GPS_Serial.flush();
+    GPS_Serial.println(F("$PUBX,00*33"));
+  #else
+    Serial.flush();
+    Serial.println(F("$PUBX,00*33"));
+  #endif
+    delay(100);
+
+    unsigned long starttime = millis();
+    while (true) {
+      #if !GPS_HW_SERIAL
+      if (GPS_Serial.available()) {
+        char c = GPS_Serial.read();
+      #else
+      if (Serial.available()) {
+        char c = Serial.read();
+      #endif
+        if (gps.encode(c))
+          return true;
+      }
+      // 
+      if (millis() - starttime > 1000) {
+        #if DEBUG
+          Serial.println(F("timeout"));
+        #endif
+        break;
+      }
+    }
+  return false;
+}
+
+void resetGPS() {
+  uint8_t set_reset[] = {
+    0xB5, 0x62, 0x06, 0x04, 0x04, 0x00, 0xFF, 0x87, 0x00, 0x00, 0x94, 0xF5
+  };
+  sendUBX(set_reset, sizeof(set_reset)/sizeof(uint8_t));
 }
 
 // http://ukhas.org.uk/guides:falcom_fsa03#sample_code
@@ -120,8 +181,8 @@ boolean getUBX_ACK(uint8_t *MSG) {
       return true;
     }
  
-    // Timeout if no valid response in 3 seconds
-    if (millis() - startTime > 3000) { 
+    // Timeout if no valid response in 1 second
+    if (millis() - startTime > 1000) { 
       //if (DEBUG)
       //  Serial.println(" FAIL");
       return false;
@@ -187,8 +248,8 @@ boolean GPS_checkNAV(){
         bytePos++;
       }
     
-    // Timeout if no valid response in 3 seconds
-    if (millis() - startTime > 3000) {
+    // Timeout if no valid response in 1 second
+    if (millis() - startTime > 1000) {
       gps_navmode = 0;
       return false;
     }

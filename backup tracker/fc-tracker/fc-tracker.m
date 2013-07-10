@@ -4,7 +4,7 @@
 // x-f, 2012
 
 use io, time, system, ui, math;
-use bigint;
+//use bigint;
 use encoding, msg, sms, gsm;
 use device, proc;
 use lib_fc as fc;
@@ -34,15 +34,16 @@ cnt = 0;
 // kaunteris, cik reižu dažādu iemeslu dēļ telemetrija nav nosūtīta
 telemetry_skipped_cnt = 0;
 // cik reizes drīkst nenosūtīt telemetriju, līdz to forsē izdarīt
-// 30 min?
-telemetry_skip_threshold = 5;
+// 10 min?
+// ja ik pēc 10 sek, tad 10*60/10
+telemetry_skip_threshold = 60;
 // cik neveiksmīgi mēģinājumi savienoties ar BT GPS
 reboot_cnt = 0;
 // cik reizes mēģināt savienoties ar BT GPS (* 5 sek), līdz restartēt telefonu
 reboot_cnt_threshold = 5;
 // cik reizes sākumā noteikti ziņot par pozīciju
-// ~stundu no sākuma?
-notify_dont_skip_from_start = 5;
+// 30 min no sākuma?
+notify_dont_skip_from_start = 180;
 
 // vertikālā ātruma aprēķinam
 vspeed = [
@@ -109,12 +110,12 @@ else
   status['status'] = "error";
 end;
 
-sleep(1000);
+sleep(2000);
 gps.gps_setup(gps_btc);
 
 fc.beep("ok");
 fc.beep("ok");
-sleep(5000);
+sleep(3000);
 
 // ping the watchdog
 fc.send2proc(pipe_ping, "ping");
@@ -141,7 +142,7 @@ do
     // end;
   
     if cmd = CMD_ABOUT then
-      ui.msg(encoding.fromutf8(TITLE + " skripts nodrošina People.lv tuvā kosmosa izpētes programmas zondes atrašanās vietas fiksēšanu un komunikācijas ar misijas vadības centru kā rezerves sakaru sistēma.\n\nAutors: x-f\nVersija: 14.03.2012."), CMD_ABOUT);
+      ui.msg(encoding.fromutf8(TITLE + " skripts nodrošina People.lv atmosfēras izpētes programmas zondes atrašanās vietas fiksēšanu un komunikācijas ar misijas vadības centru kā rezerves sakaru sistēma.\n\nAutors: x-f\nVersija: 24.06.2013."), CMD_ABOUT);
     end;
 
     if cmd = CMD_MUTE then
@@ -412,8 +413,8 @@ do
           sms_txt = fc.getTelemetryString(gps.flightlog, tm_fields);
           
           fc.log(sms_txt);
-          //sms.send(fc_cfg.notify_sms_recipients, sms_txt);
-          //fc.log("SMS queued", "ok");
+          sms.send(fc_cfg.notify_sms_recipients, sms_txt);
+          fc.log("SMS queued", "ok");
 
           // ja pirms tam jau ir sūtīta ziņa, to dzēš, jo veca
           if sms_id_current # null then

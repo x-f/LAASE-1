@@ -282,6 +282,9 @@ function getTelemetryString(array, fields)
   keys = keys(data);
   for key in keys do
     value = data[key];
+    if key = "speed" then
+      value = math.round(value);
+    end;
     str = str + value;
     if i < len(keys)-1 then
       str = str + ";";

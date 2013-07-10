@@ -213,8 +213,9 @@ repeat
   i = i + 1
   StartTick = get_tick_count()
   
-  focus = get_focus()
-  if (focus ~= -1 and focus ~= 65535) then
+  -- if (focus ~= -1 and focus ~= 65535) then
+  if (i % 3 == 0) then
+    focus = get_focus()
     debuglog("SET", 'get_focus=' .. focus .. ' (1)')
     set_focus(65535)
     sleep(500)

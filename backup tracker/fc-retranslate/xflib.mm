@@ -64,7 +64,7 @@ end;
 
 function validate_sms(sms_txt)
   if (len(sms_txt) > 5 
-    and (substr(sms_txt, 0, 3) = "FC;" or substr(sms_txt, 0, 5) = "FC-b;")
+    and (substr(sms_txt, 0, 3) = "FC;" or substr(sms_txt, 0, 5) = "FC-b;" or substr(sms_txt, 0, 5) = "FC-c;")
     ) then
     return true;
   end;
@@ -87,9 +87,13 @@ function upload_telemetry(data)
     //params = ["data": sms_txt];
     params = data;
     conn:http.Socket = http.request(cfg.notify_server_url, http.POST, params, null, true);
-    if conn.handleResponse() = 200 then
-      log("server notified");
+    http_response = conn.handleResponse();
+		
+		if http_response = 200 then
+      //log("server notified");
       uploaded = true;
+		else
+			log("response: " + http_response);
     end;
     conn.close();
 

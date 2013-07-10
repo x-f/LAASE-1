@@ -1,7 +1,7 @@
 // simple "watchdog" script to restart "fc-tracker"
 // if it suddenly hangs (has happened a couple of times, cause not known)
 
-use files, time, proc, io, system;
+use time, proc, io, system;
 use fc_cfg as fc_cfg;
 use lib_fc as fc;
 
